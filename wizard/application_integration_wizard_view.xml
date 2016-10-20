@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+	<data>
+
+		<record id="ai_data_wizard_form_view" model="ir.ui.view" >
+			<field name="name">ai.data.wizard.form</field>
+			<field name="model">application.integration.data.wizard</field>
+			<field name="arch" type="xml">
+				<form string="Set Ready To Process" version="8.0">
+					<footer>
+						<button string="Set Ready To Process" name="set_ready"
+							type="object" class="oe_highlight" />
+						or
+						<button string="Cancel" class="oe_link" special="cancel" />
+					</footer>
+				</form>
+			</field>
+		</record>
+
+        <record id="action_ai_data_wizard" model="ir.actions.act_window">
+            <field name="name">ai.data.wizard.action</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">application.integration.data.wizard</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+		<act_window
+		id="application_integration_data_ready"
+		name="Set data at ready for processing"
+		res_model="application.integration.data.wizard"
+		src_model="application.integration.data"
+		key2="client_action_multi"
+		target="new"
+		view_id="ai_data_wizard_form_view"
+		/>
+		
+		<record id="ac_data_wizard_form_view" model="ir.ui.view" >
+			<field name="name">ac.data.wizard.form</field>
+			<field name="model">application.integration.data.cancel.wizard</field>
+			<field name="arch" type="xml">
+				<form string="Cancel lines" version="8.0">
+					<group>
+						<field name="change_reason"/>
+					</group>				
+					<footer>
+						<button string="Cancel selected lines" name="do_cancel"
+							type="object" class="oe_highlight" />
+						or
+						<button string="Cancel" class="oe_link" special="cancel" />
+					</footer>
+				</form>
+			</field>
+		</record>
+
+        <record id="action_ac_data_wizard" model="ir.actions.act_window">
+            <field name="name">ac.data.wizard.action</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">application.integration.data.cancel.wizard</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+		<act_window
+		id="application_integration_data_cancel_wizard"
+		name="Cancel data"
+		res_model="application.integration.data.cancel.wizard"
+		src_model="application.integration.data"
+		key2="client_action_multi"
+		target="new"
+		view_id="ac_data_wizard_form_view"
+		/>
+	</data>
+</openerp>
+       

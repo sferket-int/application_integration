@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+	<data>
+
+		<!-- Actions -->
+		<record id="act_open_ai_application_view" model="ir.actions.act_window">
+			<field name="name">Application</field>
+			<field name="type">ir.actions.act_window</field>
+			<field name="res_model">application.integration.application</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">tree,form</field>
+			<field name="view_id" ref="view_ai_application_tree" />
+			<field name="context">{'active_test': False}</field>
+		</record>
+
+		<record id="act_open_ai_data_view" model="ir.actions.act_window">
+			<field name="name">Data</field>
+			<field name="type">ir.actions.act_window</field>
+			<field name="res_model">application.integration.data</field>
+			<field name="view_type">form</field>
+			<field name="view_mode">tree,form</field>
+			<field name="view_id" ref="view_ai_data_tree" />
+			<field name="context">{"search_default_notdone":"notdone"}</field>
+		</record>
+
+		<!-- Menu -->
+        <menuitem id="menu_ai_config" name="Application Integration" parent="base.menu_config"
+            sequence="20"/>
+        <menuitem id="menu_ai_application" name="Application" parent="menu_ai_config"
+            sequence="1" action="act_open_ai_application_view"/>            		
+        <menuitem id="menu_ai_data" name="Data" parent="menu_ai_config"
+            sequence="2" action="act_open_ai_data_view"/>            		
+		
+
+	</data>
+</openerp>

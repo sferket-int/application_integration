@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+	<data noupdate="0">
+
+		<!-- Adding Groups -->
+		<record id="group_application_integration_user" model="res.groups">
+			<field name="name">Application Integration User Group</field>
+		</record>
+
+		<record id="group_application_integration_admin" model="res.groups">
+			<field name="name">Application Integration Administrator Group</field>
+		</record>
+
+	</data>
+</openerp>

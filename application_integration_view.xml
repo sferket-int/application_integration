@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+	<data>
+		<record id="view_ai_application_tree" model="ir.ui.view">
+			<field name="name">ai.application.tree.view</field>
+			<field name="model">application.integration.application</field>
+			<field name="priority" eval="10"></field>
+			<field name="view_type">tree</field>
+			<field name="arch" type="xml">
+				<tree string="Application">
+					<field name='name' />
+					<field name='description' />
+					<field name="active" />
+					<field name="priority" />
+					<field name="checkpoint" />
+				</tree>
+			</field>
+		</record>
+
+		<record id="view_ai_application_form" model="ir.ui.view">
+			<field name="name">ai.application.form.view</field>
+			<field name="model">application.integration.application</field>
+			<field name="priority" eval="10"></field>
+			<field name="view_type">form</field>
+			<field name="arch" type="xml">
+				<form>
+					<sheet>
+						<group>
+							<field name='name' />
+							<field name='description' />
+							<field name="user_id" />
+							<field name="active" />
+							<field name="model" required='True' />
+							<field name="function" required='True' />
+							<field name="args" />
+							<field name="priority" />
+							<field name="checkpoint" />
+						</group>
+					</sheet>
+				</form>
+			</field>
+		</record>
+
+
+		<record id="view_ai_data_tree" model="ir.ui.view">
+			<field name="name">ai.data.tree.view</field>
+			<field name="model">application.integration.data</field>
+			<field name="priority" eval="10"></field>
+			<field name="view_type">tree</field>
+			<field name="arch" type="xml">
+				<tree string="Data">
+					<field name='application' />
+					<field name='state' />
+					<field name="data" />
+					<field name="message" />
+					<field name="write_date" />
+				</tree>
+			</field>
+		</record>
+
+		<record id="view_ai_data_form" model="ir.ui.view">
+			<field name="name">ai.data.form.view</field>
+			<field name="model">application.integration.data</field>
+			<field name="priority" eval="10"></field>
+			<field name="view_type">form</field>
+			<field name="arch" type="xml">
+				<form>
+					<header>
+						<field name="state" widget="statusbar" clickable="True" />
+					</header>
+					<sheet>
+						<group>
+							<field name='application' />
+							<field name="message" readonly='True' />
+							<field name="write_date" />
+						</group>
+						<group>
+							<notebook>
+								<page string="Formatted Data">
+									<field name="pretty_data" />
+								</page>
+								<page string="Raw Data">
+									<field name="data" />
+								</page>
+							</notebook>
+						</group>
+					</sheet>
+	                <div class="oe_chatter">
+	                        <field name="message_follower_ids" widget="mail_followers" />
+	                        <field name="message_ids" widget="mail_thread" />
+	                </div>  					
+				</form>
+			</field>
+		</record>
+
+		<record id="view_ai_data_search" model="ir.ui.view">
+			<field name="name">ai.data.search.view</field>
+			<field name="model">application.integration.data</field>
+			<field name="priority" eval="8" />
+			<field name="arch" type="xml">
+				<search string="Data Filters">
+					<filter string="Draft" name="draft" domain="[('state','=','draft')]" />
+					<filter string="Cancelled" name="cancel" domain="[('state','=','cancel')]" />
+					<filter string="Ready for processing" name="ready" domain="[('state','=','ready')]" />
+					<filter string="Done" name="done" domain="[('state','=','done')]" />
+					<filter string="Error" name="error" domain="[('state','=','error')]" />
+					<filter string="Not done" name="notdone" domain="[('state','not in',['done','cancel']),]" />
+				</search>
+			</field>
+		</record>
+
+
+
+	</data>
+</openerp>
+ 		
