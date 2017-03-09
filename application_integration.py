@@ -24,7 +24,6 @@ BEGIN ;
 SELECT * FROM application_integration_data WHERE id=<the id> FOR UPDATE NOWAIT
 """
 from openerp import models, fields, api, SUPERUSER_ID
-from openerp.exceptions import ValidationError
 from openerp.modules.registry import RegistryManager
 
 import logging
@@ -133,7 +132,6 @@ class ApplicationThread(threading.Thread):
                         continue
 
                     try:
-                        # with api.Environment.manage(), self.new_db_cursor() as job_cr:
                         with self.new_db_cursor() as job_cr:
                             job_env = api.Environment(job_cr, SUPERUSER_ID, {})
 
