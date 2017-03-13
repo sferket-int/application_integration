@@ -255,7 +255,7 @@ class ApplicationIntegrationApplication(models.Model):
             _logger.critical("Exception _start_application_thread: %s" % e)
             return
 
-        _logger.info('Starting Application Integration thread: %s)', thread_uuid)
+        _logger.info('Starting Application Integration thread: %s', thread_uuid)
         t.setDaemon(True)
         t.start()
 
