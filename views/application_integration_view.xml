@@ -5,7 +5,6 @@
       <field name="name">ai.application.tree.view</field>
       <field name="model">application.integration.application</field>
       <field name="priority" eval="10"></field>
-      <field name="view_type">tree</field>
       <field name="arch" type="xml">
 	<tree string="Application">
 	  <field name='name' />
@@ -22,12 +21,11 @@
       <field name="name">ai.application.form.view</field>
       <field name="model">application.integration.application</field>
       <field name="priority" eval="10"></field>
-      <field name="view_type">form</field>
       <field name="arch" type="xml">
 	<form>
 	  <sheet>
             <div class="oe_title">
-              <h1><field name="name" string="Name" /></h1>
+              <h1><field name="name" string="Name" placeholder="Name" /></h1>
 	      <div class="oe_button_box" name="button_box">
 	        <button class="btn btn-primary" icon="fa-play" string="Start"
 		        name="start_application_thread" type="object"
@@ -58,7 +56,6 @@
       <field name="name">ai.data.tree.view</field>
       <field name="model">application.integration.data</field>
       <field name="priority" eval="10"></field>
-      <field name="view_type">tree</field>
       <field name="arch" type="xml">
 	<tree string="Data">
 	  <field name='application' />
@@ -74,7 +71,6 @@
       <field name="name">ai.data.form.view</field>
       <field name="model">application.integration.data</field>
       <field name="priority" eval="10"></field>
-      <field name="view_type">form</field>
       <field name="arch" type="xml">
 	<form>
 	  <header>
