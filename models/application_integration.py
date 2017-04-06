@@ -131,8 +131,8 @@ class ApplicationThread(threading.Thread):
                         _logger.debug("Job `%s` already executed by another process/thread. skipping it", obj.id)
                         continue
 
-                    try:
-                        with self.new_db_cursor() as job_cr:
+                    with self.new_db_cursor() as job_cr:
+                        try:
                             job_env = api.Environment(job_cr, SUPERUSER_ID, {})
 
                             _logger.info("Calling model.method: %s.%s" % (obj.application.model, obj.application.function))
@@ -146,20 +146,19 @@ class ApplicationThread(threading.Thread):
                             else:
                                 obj.with_env(lock_env).write({'state': 'error', 'message': result[1]})
                                 job_cr.rollback()
-                    except Exception as e:
-                        if obj.application.function is not False or obj.application.model is not False:
-                            _logger.error("Error %s", e)
-                        else:
-                            _logger.error(
-                                "Error calling %s: %s - %s" %
-                                (obj.application.model + "." + obj.application.function, sys.exc_info()[0], sys.exc_info()[1])
-                            )
+                        except Exception as e:
+                            if obj.application.function is not False or obj.application.model is not False:
+                                _logger.error("Error %s", e)
+                            else:
+                                _logger.error(
+                                    "Error calling %s: %s - %s" %
+                                    (obj.application.model + "." + obj.application.function, sys.exc_info()[0], sys.exc_info()[1])
+                                )
 
-                        obj.with_env(lock_env).write({'state': 'error'})
-                        job_cr.rollback()
-                    finally:
-                        lock_cr.commit()
-                        job_cr.close()
+                                obj.with_env(lock_env).write({'state': 'error'})
+                                job_cr.rollback()
+                        finally:
+                            lock_cr.commit()
                 except:
                     _logger.info(("Error locking application.integration.data job: %s" % sys.exc_info()[1]))
 
