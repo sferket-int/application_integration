@@ -26,6 +26,8 @@ SELECT * FROM application_integration_data WHERE id=<the id> FOR UPDATE NOWAIT
 from openerp import models, fields, api, SUPERUSER_ID
 from openerp.modules.registry import RegistryManager
 
+from contextlib import closing
+
 import logging
 import time
 import threading
@@ -59,13 +61,16 @@ class ApplicationThread(threading.Thread):
         self.local.registry = RegistryManager.get(self.dbname)
         self.registry = self.local.registry
 
+    def new_db_cursor(self):
+        return self.registry.cursor()
+
     def run(self):
         """
         Runs in a *new* database cursor
         """
 
         while not self.stopper.is_set():
-            with api.Environment.manage(), self.new_db_cursor() as cr:
+            with api.Environment.manage(), closing(self.new_db_cursor()) as cr:
                 env = api.Environment(cr, SUPERUSER_ID, {})
 
                 self.check_valid_application(env)
@@ -74,8 +79,6 @@ class ApplicationThread(threading.Thread):
             time.sleep(60)
         return
 
-    def new_db_cursor(self):
-        return self.registry.cursor()
 
     def check_valid_application(self, env):
         application_model = env['application.integration.application']
@@ -108,7 +111,7 @@ class ApplicationThread(threading.Thread):
             if self.stopper.is_set():
                 return
 
-            with self.new_db_cursor() as lock_cr:
+            with closing(self.new_db_cursor()) as lock_cr:
                 lock_env = api.Environment(lock_cr, SUPERUSER_ID, {})
 
                 try:
@@ -131,7 +134,7 @@ class ApplicationThread(threading.Thread):
                         _logger.debug("Job `%s` already executed by another process/thread. skipping it", obj.id)
                         continue
 
-                    with self.new_db_cursor() as job_cr:
+                    with closing(self.new_db_cursor()) as job_cr:
                         try:
                             job_env = api.Environment(job_cr, SUPERUSER_ID, {})
 
