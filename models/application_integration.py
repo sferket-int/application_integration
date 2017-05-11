@@ -304,18 +304,18 @@ class ApplicationIntegrationApplication(models.Model):
                 "    thread_uuid AS uuid"
                 "  FROM"
                 "    application_integration_application "
-                "  WHERE "
-                "    autostart = True "
             )
 
             for (id, autostart, uuid) in cr.fetchall():
                 # Stop
                 self._stop_application_thread(uuid)
                 cr.execute("UPDATE application_integration_application SET thread_uuid = NULL WHERE id = %s", (id,))
+
                 # Start
-                new_uuid = self._thread_uuid()
-                self._start_application_thread(new_uuid, id, cr.dbname)
-                cr.execute("UPDATE application_integration_application SET thread_uuid = %s WHERE id = %s", (str(new_uuid), id))
+                if autostart:
+                    new_uuid = self._thread_uuid()
+                    self._start_application_thread(new_uuid, id, cr.dbname)
+                    cr.execute("UPDATE application_integration_application SET thread_uuid = %s WHERE id = %s", (str(new_uuid), id))
 
         except Exception, e:
             _logger.error("Exception: %s" % e)
