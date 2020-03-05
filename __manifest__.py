@@ -20,7 +20,7 @@
 ##############################################################################
 {
     'name': 'Application Integration',
-    'version': '0.2',
+    'version': '12.0.1.0.0',
     'category': 'Tools',
     'description': """Framework for interfacing data from other applications.""",
     'author': 'Open2bizz',
