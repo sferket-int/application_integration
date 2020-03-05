@@ -23,17 +23,17 @@ Test lock in psql:
 BEGIN ;
 SELECT * FROM application_integration_data WHERE id=<the id> FOR UPDATE NOWAIT
 """
-from openerp import models, fields, api, SUPERUSER_ID
-from openerp.modules.registry import RegistryManager
-
+from odoo import models, fields, api, SUPERUSER_ID
+from odoo import registry
+ 
 from contextlib import closing
-
+ 
 import logging
 import time
 import threading
 import sys
 import lxml.etree as etree
-
+ 
 _logger = logging.getLogger(__name__)
 
 
@@ -41,79 +41,75 @@ class ApplicationThread(threading.Thread):
     """
     Application Thread
     """
-
+ 
     def __init__(self, name, application_id, dbname, stopper):
         super(ApplicationThread, self).__init__(name=name)
-
         self.local = threading.local()
-
         self.local.name = name
         self.local.application_id = application_id
         self.local.dbname = dbname
         self.local.stopper = stopper
-
         # Set locals on thread object
         self.name = self.local.name
         self.application_id = self.local.application_id
         self.dbname = self.local.dbname
         self.stopper = self.local.stopper
-
-        self.local.registry = RegistryManager.get(self.dbname)
+        self.local.registry = registry(self.local.dbname)
         self.registry = self.local.registry
-
+ 
     def new_db_cursor(self):
         return self.registry.cursor()
-
+ 
     def run(self):
         """
         Runs in a *new* database cursor
         """
-
+ 
         while not self.stopper.is_set():
             with api.Environment.manage(), closing(self.new_db_cursor()) as cr:
                 env = api.Environment(cr, SUPERUSER_ID, {})
-
+ 
                 self.check_valid_application(env)
                 self.process_application_data(env)
-
+ 
             time.sleep(60)
         return
-
-
+ 
+ 
     def check_valid_application(self, env):
         application_model = env['application.integration.application']
-
+ 
         app_obj = application_model.search(
             [('id', '=', self.application_id)],
             limit=1
         )
-
+ 
         # Maybe application was removed while active thread.
         if not app_obj:
             _logger.info('Aborting Application Thread... No Application for Id: %s' % self.application_id)
             self.stopper.set()
             return
-
+ 
         # Maybe application was stopped while active thread.
         if app_obj and app_obj.thread_uuid is False:
             _logger.info('Aborting Application Thread... Application %s stopped' % app_obj.name)
             self.stopper.set()
             return
-
+ 
     def process_application_data(self, env):
         data_model = env['application.integration.data']
         objects = data_model.search(
             [('state', '=', 'ready'), ('application', '=', self.application_id)]
         )
-
+ 
         for obj in objects:
             # Stopper could be suddenly set!
             if self.stopper.is_set():
                 return
-
+ 
             with closing(self.new_db_cursor()) as lock_cr:
                 lock_env = api.Environment(lock_cr, SUPERUSER_ID, {})
-
+ 
                 try:
                     lock_cr.execute(
                         """
@@ -127,22 +123,22 @@ class ApplicationThread(threading.Thread):
                         FOR UPDATE NOWAIT""" % obj.id,
                         log_exceptions=False
                     )
-
+ 
                     locked_job = lock_cr.fetchone()
-
+ 
                     if not locked_job:
                         _logger.debug("Job `%s` already executed by another process/thread. skipping it", obj.id)
                         continue
-
+ 
                     with closing(self.new_db_cursor()) as job_cr:
                         try:
                             job_env = api.Environment(job_cr, SUPERUSER_ID, {})
-
+ 
                             _logger.info("Calling model.method: %s.%s" % (obj.application.model, obj.application.function))
-
+ 
                             method_to_call = getattr(job_env[obj.application.model], obj.application.function)
                             result = method_to_call(obj)
-
+ 
                             if result[0]:
                                 obj.with_env(lock_env).write({'state': 'done', 'message': result[1]})
                                 job_cr.commit()
@@ -157,19 +153,19 @@ class ApplicationThread(threading.Thread):
                                     "Error calling %s: %s - %s" %
                                     (obj.application.model + "." + obj.application.function, sys.exc_info()[0], sys.exc_info()[1])
                                 )
-
+ 
                                 obj.with_env(lock_env).write({'state': 'error'})
                                 job_cr.rollback()
                         finally:
                             lock_cr.commit()
                 except:
                     _logger.info(("Error locking application.integration.data job: %s" % sys.exc_info()[1]))
-
-
+ 
+ 
 class ApplicationIntegrationApplication(models.Model):
     _name = "application.integration.application"
     _description = "Application Integration Framework"
-
+  
     name = fields.Char(
         "Name",
         required=True
@@ -214,38 +210,38 @@ class ApplicationIntegrationApplication(models.Model):
         default=False,
         help="Ensures the application(thread) will be started right after Odoo starts"
     )
-
+  
     _sql_constraints = [
         ('name_uniq', 'unique (name)', 'The name of asset must be unique!'),
     ]
-
+  
     def __init__(self, pool, cr):
         res = super(ApplicationIntegrationApplication, self).__init__(pool, cr)
         self._autostart_application_threads(pool, cr)
         return res
-
+  
     @api.multi
     def start_application_thread(self, context=None, *args, **kwargs):
         """Start application thread (button method)"""
-
+  
         try:
             uuid = self._thread_uuid()
             self.thread_uuid = uuid
-
+  
             dbname = self._cr.dbname
-
+  
             self._cr.commit()
-
+  
             self._start_application_thread(self.thread_uuid, self.id, dbname)
             return True
-        except Exception, e:
+        except Exception as e:
             _logger.error('Exception: %s' % e)
-
+  
     def _start_application_thread(self, thread_uuid, application_id, dbname):
         """Start application thread (thread handler)"""
-
+  
         stopper = threading.Event()
-
+  
         try:
             t = ApplicationThread(
                 name=thread_uuid,
@@ -256,38 +252,38 @@ class ApplicationIntegrationApplication(models.Model):
         except Exception as e:
             _logger.critical("Exception _start_application_thread: %s" % e)
             return
-
+  
         _logger.info('Starting Application Integration thread: %s', thread_uuid)
         t.setDaemon(True)
         t.start()
-
+  
     @api.multi
     def stop_application_thread(self, context=None, *args, **kwargs):
         """Stop application thread (button method)"""
-
+  
         self._stop_application_thread(self.thread_uuid)
         self.thread_uuid = None
         self._cr.commit()
-
+  
     def _stop_application_thread(self, thread_uuid):
         """Stop application thread (thread handler)"""
-
+  
         for thread in threading.enumerate():
             if thread.getName() == thread_uuid:
                 thread.stopper.set()
                 _logger.info("Stopping Application Integration thread: %s", thread_uuid)
                 # thread.join()  # TODO Needed?
-
+  
     def is_thread_alive(self):
         if not self.thread_uuid:
             return False
-
+  
         for thread in threading.enumerate():
             if thread.getName() == self.thread_uuid:
                 return thread.is_alive()
-
+  
         return False
-
+  
     def _autostart_application_threads(self, pool, cr):
         """These (last resort) SQL could led to API-change breakage.  However,
         currently funky errors with ORM search/reads on
@@ -295,7 +291,7 @@ class ApplicationIntegrationApplication(models.Model):
         """
         if not self._is_installed(pool, cr):
             return
-
+  
         try:
             cr.execute(
                 "SELECT "
@@ -305,25 +301,25 @@ class ApplicationIntegrationApplication(models.Model):
                 "  FROM"
                 "    application_integration_application "
             )
-
+  
             for (id, autostart, uuid) in cr.fetchall():
                 # Stop
                 self._stop_application_thread(uuid)
                 cr.execute("UPDATE application_integration_application SET thread_uuid = NULL WHERE id = %s", (id,))
-
+  
                 # Start
                 if autostart:
                     new_uuid = self._thread_uuid()
                     self._start_application_thread(new_uuid, id, cr.dbname)
                     cr.execute("UPDATE application_integration_application SET thread_uuid = %s WHERE id = %s", (str(new_uuid), id))
-
-        except Exception, e:
+  
+        except Exception as e:
             _logger.error("Exception: %s" % e)
-
+  
     def _thread_uuid(self):
         from uuid import uuid4
         return uuid4()
-
+  
     def _is_installed(self, pool, cr):
         cr.execute(
                 "SELECT "
@@ -334,15 +330,15 @@ class ApplicationIntegrationApplication(models.Model):
                 "    name = 'application_integration' "
                 "    AND state = 'installed' "
             )
-
+  
         return cr.fetchone() is not None
-
-
+  
+ 
 class ApplicationIntegrationData(models.Model):
     _name = "application.integration.data"
     _inherit = 'mail.thread'
     _description = "Application Integration Framework Data"
-
+ 
     application = fields.Many2one(
         'application.integration.application',
         "Application",
@@ -369,7 +365,7 @@ class ApplicationIntegrationData(models.Model):
         'Pretty Data',
         _compute='_make_data_pretty'
     )
-
+ 
     @api.one
     def _make_data_pretty(self, id=None):
         try:
@@ -377,7 +373,7 @@ class ApplicationIntegrationData(models.Model):
             self.pretty_data = etree.tostring(x, pretty_print=True)
         except:
             self.pretty_data = self.data
-
+ 
     @api.multi
     def _attachfile(self, vals):
         attachmentdata = {
@@ -388,7 +384,7 @@ class ApplicationIntegrationData(models.Model):
         }
         att_obj = self.env['ir.attachment']
         att_obj.create(attachmentdata)
-
+ 
     @api.model
     def create(self, vals):
         res = super(ApplicationIntegrationData, self).create(vals)
@@ -396,12 +392,12 @@ class ApplicationIntegrationData(models.Model):
             vals['res_id'] = res
             self._attachfile(vals)
         return res
-
+ 
     def test_rapid_process(self, obj):
         msg = 'Test rapid process'
         _logger.error(msg)
         return [True, msg]
-
+ 
     def test_slow_process(self, obj):
         interval = 5
         msg = 'test slow process (%s seconds)' % interval
@@ -409,7 +405,7 @@ class ApplicationIntegrationData(models.Model):
         time.sleep(interval)
         _logger.error("Done: %s" % msg)
         return [True, msg]
-
+ 
     def test_really_slow_process(self, obj):
         interval = 15
         msg = 'Test really slow process (%s seconds)' % interval
@@ -417,12 +413,12 @@ class ApplicationIntegrationData(models.Model):
         time.sleep(interval)
         _logger.error('Done: %s' % msg)
         return [True, msg]
-
+ 
     def test_rapid_error_process(self, obj):
         msg = 'Test rapid error process'
         _logger.error(msg)
         return [False, msg]
-
+ 
     def test_slow_error_process(self, obj):
         interval = 10
         msg = 'Test slow error process: %s seconds' % interval

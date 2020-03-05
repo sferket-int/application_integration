@@ -24,12 +24,12 @@
 		</record>
 
 		<!-- Menu -->
-        <menuitem id="menu_ai_config" name="Application Integration" parent="base.menu_config"
+        <menuitem id="menu_ai_config" name="Application Integration" parent="base.menu_custom"
             sequence="20"/>
         <menuitem id="menu_ai_application" name="Application" parent="menu_ai_config"
             sequence="1" action="act_open_ai_application_view"/>            		
         <menuitem id="menu_ai_data" name="Data" parent="menu_ai_config"
-            sequence="2" action="act_open_ai_data_view"/>            		
+            sequence="2" action="act_open_ai_data_view"/>           		
 		
 
 	</data>
